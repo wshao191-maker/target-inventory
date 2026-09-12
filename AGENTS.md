@@ -79,10 +79,91 @@ Z          = 标准正态分布反函数（服务水平）
 - 键名：参数 `supplychain.targetInventory.params`，口径 `supplychain.targetInventory.accuracyMode`。
 - 呈现口径同样持久化，键名 `supplychain.targetInventory.displayUnit`。
 - 无账号、无云同步、不上传任何数据。
-- 提供「复制结果」按钮，把输入参数、四段构成与建议下单量拼成纯文本写入剪贴板。
+- 提供「查看可复制的文本」按钮：展开只读文本框展示结果摘要（输入参数、四段构成、建议下单量），聚焦时自动全选，由使用者手动复制。小工具容器禁用了剪贴板能力，因此不提供一键复制。
 
 ## 技术约束
 
 - 纯前端静态实现：`index.html` + `styles.css` + `app.js`，无后端、无构建、无第三方依赖。
 - 中文界面，默认浅色主题，窄屏（手机宽度）可用且无横向滚动。
 - 计算内核通过 `window.TargetInventoryCore` 暴露，便于自检。
+- 同一份代码有**两个交付物**：GitHub Pages 网页版，以及符合小红书小工具容器规范的离线 zip。任何改动都必须同时满足两者的约束。
+
+## 小工具打包约束
+
+打包规范来自 `minitool-zip-builder` 技能（`E:\codex exp\.agents\skills\minitool-zip-builder\`）。改动工具内容时必须保持以下约束，**违反任意一条都会导致小工具加载失败或行为异常**：
+
+### 包结构
+
+- zip 内 `index.html` 位于**根目录**，其余文件平铺或用相对路径引用；不得多套一层目录。
+- 只允许 `.html` / `.css` / `.js` / 图片 / 字体 / `.json`；不得包含 `node_modules`、`.git`、`*.map`、构建配置。
+- 打包压缩的是「与 `index.html` 同级的那批文件」，不是它们所在的文件夹。
+
+### 页面与资源
+
+- `index.html` 需有 `<!DOCTYPE html>`、`lang="zh-CN"`、`charset=UTF-8`。
+- viewport 必须含 `width=device-width, initial-scale=1.0, viewport-fit=cover`。
+- 全部资源为相对路径（`./xxx`）；**不得引用任何 `http(s)://` 外部资源**，容器不联网。
+- 脚本必须外置：禁止内联 `<script>`、禁止 `onclick=` 等行内事件、禁止 `javascript:` / `eval()` / `new Function()`。
+- 必须是**经典脚本**：不要 `type="module"`，JS 内不要 `import` / `export`。
+- 禁止 `<base href>`、`<iframe>` / `<object>`、自建 CSP `<meta>`。
+
+### 被禁用的容器能力（命中即必须移除）
+
+`navigator.clipboard`（含读取与写入）、`document.execCommand('copy'/'cut'/'paste')`、`fetch` / `XMLHttpRequest` 等一切网络请求、`navigator.geolocation`、蓝牙 / USB / 串口 / 传感器、`WebSocket` / `EventSource` / `RTCPeerConnection`、Web Worker / Service Worker、`window.open` / `window.prompt`、`location.href` 跳转站外、`<a download>`、`target="_blank"`、WebAssembly、`Element.requestFullscreen`。
+
+**允许使用**：`localStorage` / `sessionStorage` / `IndexedDB`、`alert()` / `confirm()`、touch / pointer 事件、标准 DOM / CSS / Canvas 2D / WebGL。
+
+> 需要「复制文本」这类能力时，按规范改为**展示可选中文本**，引导使用者长按 / 选中手动复制。
+
+### 兼容性基线
+
+- **JS**：最低基线为 Android 8.1 出厂 Chrome / WebView 61，直接交付的代码以 **ES2017** 为上限；不得使用对象展开、可选链 `?.`、空值合并 `??`、`top-level await` 等 ES2018+ 语法。
+- **CSS**：采用「Chrome 61 基线层 + 能力检测增强层」，只维护一套组件规则。
+  - Flexbox 的 `gap` 晚于 Chrome 61：基线用子项 `margin`，由 JS **实际布局测量**确认支持后加 `.supports-flex-gap` 再切到 `column-gap` / `row-gap`。不得用 `@supports (gap: 1px)` 或 `CSS.supports('gap','1px')` 冒充 Flex gap 检测。
+  - Grid 间距使用 `grid-gap`，不用 `gap`。
+  - 焦点样式以 `:focus` 为基线，不得只依赖 `:focus-visible`。
+  - 悬停效果包进 `@media (hover: hover)`，关键操作不得只在悬停时出现。
+  - 不使用 `aspect-ratio`、`clamp()`、逻辑属性、`:has()`、Container Queries、Subgrid、CSS Nesting、`dvh/svh/lvh` 等晚于基线的能力。
+  - 安全区用 `var(--safe-area-inset-*, env(safe-area-inset-*, 0px))`，并保留静态兜底。
+- 当前交付状态：**Chrome 61 / Android 8.1 兼容性未实测**（无对应真机或模拟器），结论来自静态扫描与规范比对。
+
+### 体积门禁
+
+- 最终 zip 不超过 **10 MiB**（硬上限），建议不超过 2 MiB。
+- 单个 `.html` / `.css` / `.js` / `.json` 超过 2 MiB、文本合计超过 5 MiB 时需人工复核。
+- 单条 Base64 解码后不超过 1 MiB；不得把大型数据集塞进 JS / JSON。
+
+## 更新与发布流程
+
+工具内容的改动都在本目录下进行，两个交付物由两个脚本分别产出：
+
+```powershell
+# 1. 改代码：index.html / styles.css / app.js
+
+# 2. 重新打包小工具 zip（生成 minitool\dist\ 与 minitool\目标库存测算小工具.zip）
+.\build-minitool.ps1
+
+# 3. 提交并推送，网页版自动重新部署
+.\deploy.ps1 "这次改了什么"
+```
+
+要点：
+
+- `build-minitool.ps1` 每次都会清空重建 `minitool\`，避免残留旧文件被打进包；压缩的是 `dist` 目录内容，因此 `index.html` 直接位于 zip 根目录。
+- `minitool\` 已在 `.gitignore` 中忽略，打包产物不会进入网页部署仓库。
+- `deploy.ps1` 会自动提交改动并推送；GitHub Pages 约 1–2 分钟、Cloudflare Pages 约 30 秒后更新，**链接保持不变**。
+- 只改文档（如本文件）时无需重新打包小工具，但仍建议跑 `deploy.ps1` 保持本地与远端一致。
+
+### 改动后必须做的核对
+
+1. 按 `references/zip-artifact-spec.md` 末尾的自检清单逐项核对包结构与页面规范。
+2. 扫描代码中是否残留被禁能力（`navigator.clipboard`、`execCommand`、`fetch`、内联脚本、`https://` 外部引用等）。
+3. 跑审计脚本做体积门禁（目录审计要在压缩前做）：
+
+   ```powershell
+   $skill = "..\.agents\skills\minitool-zip-builder"
+   node "$skill\scripts\audit_artifact.mjs" .\minitool\dist
+   node "$skill\scripts\audit_artifact.mjs" ".\minitool\目标库存测算小工具.zip"
+   ```
+
+4. 在 PC 模拟器与真机上各跑一遍核心流程（填参数 → 计算 → 切换呈现口径 → 查看可复制文本），确认无异常。
