@@ -177,7 +177,8 @@
     rReference: $("r-reference"),
     rAdvice: $("r-advice"),
     copyBtn: $("copy-btn"),
-    copyHint: $("copy-hint")
+    copyPanel: $("copy-panel"),
+    copyText: $("copy-text")
   };
 
   var NUM_FIELDS = [
@@ -607,37 +608,50 @@
     }
   }
 
-  function copyResult() {
+  /*
+    小工具容器禁用了剪贴板相关能力，因此不做一键复制，
+    改为把整理好的文本放进只读文本框，由用户选中后手动复制。
+  */
+  function toggleCopyPanel() {
     if (!lastCopyText) {
       return;
     }
-    var done = function () {
-      els.copyHint.textContent = "已复制到剪贴板";
-      els.copyHint.hidden = false;
-      window.setTimeout(function () { els.copyHint.hidden = true; }, 2000);
-    };
-    var fallbackCopy = function () {
-      var area = document.createElement("textarea");
-      area.value = lastCopyText;
-      area.setAttribute("readonly", "readonly");
-      area.style.position = "fixed";
-      area.style.top = "-1000px";
-      document.body.appendChild(area);
-      area.select();
-      try {
-        document.execCommand("copy");
-        done();
-      } catch (err) {
-        els.copyHint.textContent = "复制失败，请手动选中结果文字";
-        els.copyHint.hidden = false;
-      }
-      document.body.removeChild(area);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(lastCopyText).then(done, fallbackCopy);
+    if (els.copyPanel.hidden) {
+      els.copyText.value = lastCopyText;
+      els.copyPanel.hidden = false;
+      els.copyBtn.textContent = "收起文本";
     } else {
-      fallbackCopy();
+      els.copyPanel.hidden = true;
+      els.copyBtn.textContent = "查看可复制的文本";
+    }
+  }
+
+  // select() 只是选中文本框内容，不属于被禁用的剪贴板 API
+  function selectCopyText() {
+    if (typeof els.copyText.select === "function") {
+      els.copyText.select();
+    }
+  }
+
+  /*
+    Flexbox 的 gap 晚于 Chrome 61，且语法检测无法证明 gap 在 Flex 中真正生效，
+    所以这里实际创建一个 Flex 容器测量一次，再给 html 加增强 class。
+    只检测一次，不参与 resize 或渲染循环。
+  */
+  function initFlexGapSupport() {
+    var probe = document.createElement("div");
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.display = "flex";
+    probe.style.flexDirection = "column";
+    probe.style.rowGap = "1px";
+    probe.appendChild(document.createElement("div"));
+    probe.appendChild(document.createElement("div"));
+    document.body.appendChild(probe);
+    var supported = probe.scrollHeight === 1;
+    probe.parentNode.removeChild(probe);
+    if (supported) {
+      document.documentElement.classList.add("supports-flex-gap");
     }
   }
 
@@ -732,8 +746,11 @@
     render(collected.values, compute(collected.values), true);
   });
 
-  els.copyBtn.addEventListener("click", copyResult);
+  els.copyBtn.addEventListener("click", toggleCopyPanel);
+  els.copyText.addEventListener("focus", selectCopyText);
+  els.copyText.addEventListener("click", selectCopyText);
 
+  initFlexGapSupport();
   loadParams();
   updateAccuracyUi();
   updateUnitUi();

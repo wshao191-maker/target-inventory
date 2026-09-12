@@ -1,6 +1,9 @@
 # Excel 构建产物与依赖：体积巨大（7796 个文件 / 320 MB），不进入发布仓库
 excel/
 
+# 小工具打包产物（build-minitool.ps1 生成）：不进入网页部署仓库
+minitool/
+
 # 通用忽略
 node_modules/
 Thumbs.db

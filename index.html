@@ -1,10 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>供应链目标库存测算</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="app">
@@ -262,8 +262,12 @@
           </details>
 
           <div class="copy-area">
-            <button type="button" class="btn btn-secondary" id="copy-btn">复制结果</button>
-            <span class="copy-hint" id="copy-hint" hidden>已复制到剪贴板</span>
+            <button type="button" class="btn btn-secondary" id="copy-btn">查看可复制的文本</button>
+          </div>
+
+          <div class="copy-panel" id="copy-panel" hidden>
+            <p class="copy-panel-tip">小工具内不支持一键复制：请在下方文本框中长按全选，再用系统菜单复制。</p>
+            <textarea id="copy-text" class="copy-text" rows="10" readonly aria-label="可复制的结果文本"></textarea>
           </div>
         </div>
       </section>
@@ -274,6 +278,6 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
