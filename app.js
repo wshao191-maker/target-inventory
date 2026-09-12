@@ -163,12 +163,14 @@
     onHand: $("onHand"),
     segButtons: Array.prototype.slice.call(document.querySelectorAll(".seg-btn[data-acc-mode]")),
     unitButtons: Array.prototype.slice.call(document.querySelectorAll(".seg-btn[data-unit]")),
+    hintToggles: Array.prototype.slice.call(document.querySelectorAll(".hint-toggle")),
     resultEmpty: $("result-empty"),
     resultBody: $("result-body"),
     rLabel: $("r-label"),
     rTarget: $("r-target"),
     rUnit: $("r-unit"),
     rRaw: $("r-raw"),
+    rStack: $("r-stack"),
     rBreakdown: $("r-breakdown"),
     rMetrics: $("r-metrics"),
     rSteps: $("r-steps"),
@@ -358,30 +360,49 @@
     var rowEl = document.createElement("div");
     rowEl.className = "bd-row";
 
+    var dot = document.createElement("span");
+    dot.className = "bd-dot s" + colorClass;
+
     var nameEl = document.createElement("span");
     nameEl.className = "bd-name";
     nameEl.textContent = name;
-
-    var track = document.createElement("span");
-    track.className = "bd-track";
-    var fill = document.createElement("span");
-    fill.className = "bd-fill" + (colorClass ? " " + colorClass : "");
-    fill.style.width = Math.max(share * 100, 0.5).toFixed(2) + "%";
-    track.appendChild(fill);
 
     var valueEl = document.createElement("span");
     valueEl.className = "bd-value";
     valueEl.textContent = unitMode === "days" ? fmtDays(dayValue) : fmtNum(value) + " 件";
     var small = document.createElement("small");
-    small.textContent = unitMode === "days"
-      ? fmtPct(share, 1) + " · " + fmtNum(value) + " 件"
-      : fmtPct(share, 1) + (dayValue === null ? "" : " · " + fmtDays(dayValue));
+    small.textContent = fmtPct(share, 1) + (dayValue === null
+      ? ""
+      : " · " + (unitMode === "days" ? fmtNum(value) + " 件" : fmtDays(dayValue)));
     valueEl.appendChild(small);
 
+    rowEl.appendChild(dot);
     rowEl.appendChild(nameEl);
-    rowEl.appendChild(track);
     rowEl.appendChild(valueEl);
     container.appendChild(rowEl);
+  }
+
+  // 100% 堆叠构成条：只渲染数值大于 0 的段，避免出现空缝
+  function renderStack(container, segments, total, animate) {
+    container.innerHTML = "";
+    segments.forEach(function (s) {
+      if (!(s.value > 0)) {
+        return;
+      }
+      var seg = document.createElement("span");
+      seg.className = "stack-seg s" + s.index;
+      seg.style.flexGrow = String(s.value);
+      seg.title = s.name + " " + fmtPct(total > 0 ? s.value / total : 0, 1);
+      container.appendChild(seg);
+    });
+
+    container.classList.remove("is-in", "no-anim");
+    if (animate) {
+      void container.offsetWidth; // 触发重排，让从 0 展开的过渡生效
+      container.classList.add("is-in");
+    } else {
+      container.classList.add("no-anim", "is-in");
+    }
   }
 
   function addStep(container, text) {
@@ -390,10 +411,16 @@
     container.appendChild(li);
   }
 
-  function render(values, r) {
+  function render(values, r, animate) {
     els.resultEmpty.hidden = true;
     els.resultBody.hidden = false;
     updateUnitUi();
+
+    els.resultBody.classList.remove("is-fresh");
+    if (animate) {
+      void els.resultBody.offsetWidth; // 切换呈现口径时不重播入场动画
+      els.resultBody.classList.add("is-fresh");
+    }
 
     if (unitMode === "days") {
       els.rLabel.textContent = "目标库存可支撑天数";
@@ -412,10 +439,17 @@
     }
 
     els.rBreakdown.innerHTML = "";
-    addBreakdownRow(els.rBreakdown, "安全库存", r.safetyStock, r.targetRaw, "", r.dailyDemand);
-    addBreakdownRow(els.rBreakdown, "周转库存", r.cycleStock, r.targetRaw, "c2", r.dailyDemand);
-    addBreakdownRow(els.rBreakdown, "提前期需求", r.leadDemand, r.targetRaw, "c3", r.dailyDemand);
-    addBreakdownRow(els.rBreakdown, "冻结库存", r.frozenStock, r.targetRaw, "c4", r.dailyDemand);
+    addBreakdownRow(els.rBreakdown, "安全库存", r.safetyStock, r.targetRaw, 1, r.dailyDemand);
+    addBreakdownRow(els.rBreakdown, "周转库存", r.cycleStock, r.targetRaw, 2, r.dailyDemand);
+    addBreakdownRow(els.rBreakdown, "提前期需求", r.leadDemand, r.targetRaw, 3, r.dailyDemand);
+    addBreakdownRow(els.rBreakdown, "冻结库存", r.frozenStock, r.targetRaw, 4, r.dailyDemand);
+
+    renderStack(els.rStack, [
+      { index: 1, name: "安全库存", value: r.safetyStock },
+      { index: 2, name: "周转库存", value: r.cycleStock },
+      { index: 3, name: "提前期需求", value: r.leadDemand },
+      { index: 4, name: "冻结库存", value: r.frozenStock }
+    ], r.targetRaw, animate);
 
     els.rMetrics.innerHTML = "";
     addMetric(els.rMetrics, "日均需求", fmtNum(r.dailyDemand) + " 件/天");
@@ -623,9 +657,60 @@
       updateUnitUi();
       saveParams();
       if (lastValues && lastResult) {
-        render(lastValues, lastResult);
+        render(lastValues, lastResult, false);
       }
     });
+  });
+
+  /* ---------------- 字段说明气泡 ---------------- */
+
+  var hintPairs = els.hintToggles.map(function (btn) {
+    return { button: btn, anchor: btn.closest(".hint-anchor") };
+  }).filter(function (pair) {
+    return pair.anchor;
+  });
+
+  function closeHints(except) {
+    hintPairs.forEach(function (pair) {
+      if (pair.anchor === except) {
+        return;
+      }
+      pair.anchor.classList.remove("is-open");
+      pair.button.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  hintPairs.forEach(function (pair) {
+    pair.button.addEventListener("click", function (event) {
+      event.preventDefault();
+      var willOpen = !pair.anchor.classList.contains("is-open");
+      closeHints(pair.anchor);
+      pair.anchor.classList.toggle("is-open", willOpen);
+      pair.button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (!willOpen) {
+        pair.button.blur();
+      }
+    });
+  });
+
+  document.addEventListener("click", function (event) {
+    var target = event.target;
+    var insideHint = target && typeof target.closest === "function" && target.closest(".hint-anchor");
+    if (!insideHint) {
+      closeHints();
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") {
+      return;
+    }
+    closeHints();
+    var active = document.activeElement;
+    if (active && typeof active.blur === "function" &&
+        active.classList && active.classList.contains("hint-toggle")) {
+      active.blur();
+    }
   });
 
   var boundInputs = [els.sku, els.accuracyValue].concat(NUM_FIELDS.map(function (f) { return f.el; }));
@@ -644,7 +729,7 @@
     if (collected.problems.length) {
       return;
     }
-    render(collected.values, compute(collected.values));
+    render(collected.values, compute(collected.values), true);
   });
 
   els.copyBtn.addEventListener("click", copyResult);

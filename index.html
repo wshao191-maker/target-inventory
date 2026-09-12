@@ -14,95 +14,185 @@
     </header>
 
     <main class="layout">
-      <section class="card">
+      <section class="card form-card">
         <h2 class="card-title">产品参数</h2>
         <p id="error-summary" class="error-summary" role="alert" hidden></p>
 
         <form id="calc-form" autocomplete="off" novalidate>
-          <div class="fields">
-            <div class="field field-wide">
-              <label for="sku">产品名称 / SKU <span class="tag">选填</span></label>
-              <input id="sku" type="text" maxlength="80" placeholder="如 A1001 电机总成">
-              <p class="hint">填了会出现在复制结果的开头，留空不影响计算。</p>
-            </div>
-
-            <div class="field">
-              <label for="monthlyDemand">月需求 <span class="tag">件/月</span></label>
-              <input id="monthlyDemand" type="text" inputmode="decimal" placeholder="如 12000">
-              <p class="hint">未来一个月的预测需求量。</p>
-              <p class="error" id="err-monthlyDemand" hidden></p>
-            </div>
-
-            <div class="field">
-              <label for="daysPerMonth">月计天数 <span class="tag">天</span></label>
-              <input id="daysPerMonth" type="text" inputmode="decimal" value="30">
-              <p class="hint">默认 30 自然日；改用 22 工作日时，提前期与下单周期请同步按工作日填写。</p>
-              <p class="error" id="err-daysPerMonth" hidden></p>
-            </div>
-
-            <div class="field">
-              <label for="leadTime">采购提前期 <span class="tag">天</span></label>
-              <input id="leadTime" type="text" inputmode="decimal" placeholder="如 45">
-              <p class="hint">从下单到货物可用的天数。</p>
-              <p class="error" id="err-leadTime" hidden></p>
-            </div>
-
-            <div class="field">
-              <label for="leadTimeSd">提前期波动 σ <span class="tag">天</span></label>
-              <input id="leadTimeSd" type="text" inputmode="decimal" placeholder="0">
-              <p class="hint">选填，提前期标准差；提前期稳定就填 0 或留空。</p>
-              <p class="error" id="err-leadTimeSd" hidden></p>
-            </div>
-
-            <div class="field field-wide">
-              <label for="accuracyValue" id="accuracy-label">预测准确率 <span class="tag">%</span></label>
-              <div class="segmented" role="group" aria-label="波动性输入口径">
-                <button type="button" class="seg-btn active" data-acc-mode="accuracy">预测准确率</button>
-                <button type="button" class="seg-btn" data-acc-mode="mape">MAPE</button>
+          <section class="group" aria-labelledby="group-demand">
+            <h3 class="group-title" id="group-demand">需求与波动</h3>
+            <div class="fields">
+              <div class="field field-wide">
+                <div class="field-head">
+                  <label for="sku">产品名称 / SKU <span class="tag">选填</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-sku" aria-label="产品名称 填写说明">?</button>
+                    <span class="hint-pop" id="hint-sku" role="tooltip">
+                      <span class="hint">填了会出现在复制结果的开头，留空不影响计算。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="sku" type="text" maxlength="80" placeholder="如 A1001 电机总成">
               </div>
-              <div class="input-with-suffix">
-                <input id="accuracyValue" type="text" inputmode="decimal" value="85" aria-describedby="accuracy-hint">
-                <span class="suffix">%</span>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="monthlyDemand">月需求 <span class="tag">件/月</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-monthlyDemand" aria-label="月需求 填写说明">?</button>
+                    <span class="hint-pop" id="hint-monthlyDemand" role="tooltip">
+                      <span class="hint">未来一个月的预测需求量。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="monthlyDemand" type="text" inputmode="decimal" placeholder="如 12000">
+                <p class="error" id="err-monthlyDemand" hidden></p>
               </div>
-              <p class="hint" id="accuracy-hint"></p>
-              <p class="error" id="err-accuracyValue" hidden></p>
-            </div>
 
-            <div class="field">
-              <label for="serviceLevel">服务水平 <span class="tag">%</span></label>
-              <input id="serviceLevel" type="text" inputmode="decimal" value="95">
-              <p class="hint">取值 50%–99.99%，工具会自动换算 Z 值。</p>
-              <p class="error" id="err-serviceLevel" hidden></p>
-            </div>
+              <div class="field">
+                <div class="field-head">
+                  <label for="daysPerMonth">月计天数 <span class="tag">天</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-daysPerMonth" aria-label="月计天数 填写说明">?</button>
+                    <span class="hint-pop" id="hint-daysPerMonth" role="tooltip">
+                      <span class="hint">默认 30 自然日。改用 22 工作日时，采购提前期与下单周期请同步按工作日填写。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="daysPerMonth" type="text" inputmode="decimal" value="30">
+                <p class="error" id="err-daysPerMonth" hidden></p>
+              </div>
 
-            <div class="field">
-              <label for="orderCycle">下单周期 <span class="tag">天</span></label>
-              <input id="orderCycle" type="text" inputmode="decimal" placeholder="如 30">
-              <p class="hint">两次下单之间的间隔，用来算周转库存。</p>
-              <p class="error" id="err-orderCycle" hidden></p>
+              <div class="field field-wide">
+                <div class="field-head">
+                  <label for="accuracyValue" id="accuracy-label">预测准确率 <span class="tag">%</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="accuracy-hint" aria-label="预测准确率 填写说明">?</button>
+                    <span class="hint-pop" role="tooltip">
+                      <span class="hint" id="accuracy-hint"></span>
+                    </span>
+                  </span>
+                </div>
+                <div class="segmented" role="group" aria-label="波动性输入口径">
+                  <button type="button" class="seg-btn active" data-acc-mode="accuracy">预测准确率</button>
+                  <button type="button" class="seg-btn" data-acc-mode="mape">MAPE</button>
+                </div>
+                <div class="input-with-suffix">
+                  <input id="accuracyValue" type="text" inputmode="decimal" value="85" aria-describedby="accuracy-hint">
+                  <span class="suffix">%</span>
+                </div>
+                <p class="error" id="err-accuracyValue" hidden></p>
+              </div>
             </div>
+          </section>
 
-            <div class="field">
-              <label for="moq">MOQ <span class="tag">件</span></label>
-              <input id="moq" type="text" inputmode="decimal" placeholder="如 5000">
-              <p class="hint">最小起订量，周转库存取它与下单周期需求的较大值。</p>
-              <p class="error" id="err-moq" hidden></p>
-            </div>
+          <section class="group" aria-labelledby="group-supply">
+            <h3 class="group-title" id="group-supply">供应与订货</h3>
+            <div class="fields">
+              <div class="field">
+                <div class="field-head">
+                  <label for="leadTime">采购提前期 <span class="tag">天</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-leadTime" aria-label="采购提前期 填写说明">?</button>
+                    <span class="hint-pop" id="hint-leadTime" role="tooltip">
+                      <span class="hint">从下单到货物可用需要几天。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="leadTime" type="text" inputmode="decimal" placeholder="如 45">
+                <p class="error" id="err-leadTime" hidden></p>
+              </div>
 
-            <div class="field">
-              <label for="frozenDays">冻结天数 <span class="tag">天</span></label>
-              <input id="frozenDays" type="text" inputmode="decimal" placeholder="0">
-              <p class="hint">选填，被质检或占用而无法动用的天数。</p>
-              <p class="error" id="err-frozenDays" hidden></p>
-            </div>
+              <div class="field">
+                <div class="field-head">
+                  <label for="leadTimeSd">提前期波动 σ <span class="tag">天</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-leadTimeSd" aria-label="提前期波动 填写说明">?</button>
+                    <span class="hint-pop" id="hint-leadTimeSd" role="tooltip">
+                      <span class="hint">选填，提前期的标准差。提前期稳定就填 0 或留空。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="leadTimeSd" type="text" inputmode="decimal" placeholder="0">
+                <p class="error" id="err-leadTimeSd" hidden></p>
+              </div>
 
-            <div class="field">
-              <label for="onHand">现有库存 <span class="tag">件</span></label>
-              <input id="onHand" type="text" inputmode="decimal" placeholder="0">
-              <p class="hint">选填，用来算建议下单量。</p>
-              <p class="error" id="err-onHand" hidden></p>
+              <div class="field">
+                <div class="field-head">
+                  <label for="orderCycle">下单周期 <span class="tag">天</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-orderCycle" aria-label="下单周期 填写说明">?</button>
+                    <span class="hint-pop" id="hint-orderCycle" role="tooltip">
+                      <span class="hint">两次下单之间的间隔，用来计算周转库存。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="orderCycle" type="text" inputmode="decimal" placeholder="如 30">
+                <p class="error" id="err-orderCycle" hidden></p>
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="moq">MOQ <span class="tag">件</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-moq" aria-label="MOQ 填写说明">?</button>
+                    <span class="hint-pop" id="hint-moq" role="tooltip">
+                      <span class="hint">最小起订量。周转库存取它与下单周期需求中的较大者，再取一半。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="moq" type="text" inputmode="decimal" placeholder="如 5000">
+                <p class="error" id="err-moq" hidden></p>
+              </div>
             </div>
-          </div>
+          </section>
+
+          <section class="group" aria-labelledby="group-stock">
+            <h3 class="group-title" id="group-stock">服务与库存</h3>
+            <div class="fields">
+              <div class="field">
+                <div class="field-head">
+                  <label for="serviceLevel">服务水平 <span class="tag">%</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-serviceLevel" aria-label="服务水平 填写说明">?</button>
+                    <span class="hint-pop" id="hint-serviceLevel" role="tooltip">
+                      <span class="hint">取值 50%–99.99%，工具会自动换算成 Z 值。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="serviceLevel" type="text" inputmode="decimal" value="95">
+                <p class="error" id="err-serviceLevel" hidden></p>
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="frozenDays">冻结天数 <span class="tag">天</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-frozenDays" aria-label="冻结天数 填写说明">?</button>
+                    <span class="hint-pop" id="hint-frozenDays" role="tooltip">
+                      <span class="hint">选填，被质检或占用而无法动用的天数。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="frozenDays" type="text" inputmode="decimal" placeholder="0">
+                <p class="error" id="err-frozenDays" hidden></p>
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="onHand">现有库存 <span class="tag">件</span></label>
+                  <span class="hint-anchor">
+                    <button type="button" class="hint-toggle" aria-expanded="false" aria-controls="hint-onHand" aria-label="现有库存 填写说明">?</button>
+                    <span class="hint-pop" id="hint-onHand" role="tooltip">
+                      <span class="hint">选填，用来计算建议下单量。</span>
+                    </span>
+                  </span>
+                </div>
+                <input id="onHand" type="text" inputmode="decimal" placeholder="0">
+                <p class="error" id="err-onHand" hidden></p>
+              </div>
+            </div>
+          </section>
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">计算目标库存</button>
@@ -114,6 +204,7 @@
         <h2 class="card-title">计算结果</h2>
 
         <div id="result-empty" class="result-empty">
+          <span class="result-empty-icon" aria-hidden="true">∑</span>
           <p>填好左侧参数，点击「计算目标库存」查看结果。</p>
         </div>
 
@@ -126,35 +217,47 @@
             </div>
           </div>
 
-          <p class="result-label" id="r-label">目标库存水平</p>
-          <p class="result-value"><span id="r-target">0</span><span class="result-unit" id="r-unit">件</span></p>
-          <p class="result-raw" id="r-raw"></p>
+          <div class="result-hero">
+            <p class="result-label" id="r-label">目标库存水平</p>
+            <p class="result-value"><span id="r-target">0</span><span class="result-unit" id="r-unit">件</span></p>
+            <p class="result-raw" id="r-raw"></p>
+          </div>
+
+          <div class="stack-bar" id="r-stack" aria-hidden="true"></div>
 
           <h3 class="section-title">四段构成</h3>
           <div class="breakdown" id="r-breakdown"></div>
 
+          <div class="order-advice" id="r-advice"></div>
+
           <h3 class="section-title">关键中间量</h3>
           <div class="metrics" id="r-metrics"></div>
 
-          <h3 class="section-title">换算过程</h3>
-          <ol class="steps" id="r-steps"></ol>
+          <details class="derivation">
+            <summary>
+              <span class="derivation-title">换算过程与参考口径</span>
+              <span class="chevron" aria-hidden="true"></span>
+            </summary>
+            <div class="derivation-body">
+              <h4 class="sub-title">换算过程</h4>
+              <ol class="steps" id="r-steps"></ol>
 
-          <div class="reference" id="r-reference"></div>
-          <div class="order-advice" id="r-advice"></div>
+              <h4 class="sub-title">参考口径</h4>
+              <div class="reference" id="r-reference"></div>
 
-          <details class="formula-details">
-            <summary>计算公式说明</summary>
-            <div class="formula-body">
-              <p><code>日均需求 = 月需求 ÷ 月计天数</code></p>
-              <p><code>σ需求 = MAPE × 日均需求</code></p>
-              <p><code>Z = 标准正态分布反函数（服务水平）</code></p>
-              <p><code>提前期需求 = 日均需求 × 采购提前期</code></p>
-              <p><code>安全库存 = Z × √(提前期 × σ需求² + 日均需求² × 提前期波动²)</code></p>
-              <p><code>周转库存 = 0.5 × max(日均需求 × 下单周期, MOQ)</code></p>
-              <p><code>冻结库存 = 日均需求 × 冻结天数</code></p>
-              <p><code>目标库存 = 安全库存 + 周转库存 + 提前期需求 + 冻结库存</code></p>
-              <p><code>库存天数 = 数量 ÷ 日均需求</code></p>
-              <p class="formula-note">参考口径把 σ需求 换成 1.25 × MAPE × 日均需求，只作对照，不影响主结果。</p>
+              <h4 class="sub-title">计算公式</h4>
+              <div class="formula-body">
+                <p><code>日均需求 = 月需求 ÷ 月计天数</code></p>
+                <p><code>σ需求 = MAPE × 日均需求</code></p>
+                <p><code>Z = 标准正态分布反函数（服务水平）</code></p>
+                <p><code>提前期需求 = 日均需求 × 采购提前期</code></p>
+                <p><code>安全库存 = Z × √(提前期 × σ需求² + 日均需求² × 提前期波动²)</code></p>
+                <p><code>周转库存 = 0.5 × max(日均需求 × 下单周期, MOQ)</code></p>
+                <p><code>冻结库存 = 日均需求 × 冻结天数</code></p>
+                <p><code>目标库存 = 安全库存 + 周转库存 + 提前期需求 + 冻结库存</code></p>
+                <p><code>库存天数 = 数量 ÷ 日均需求</code></p>
+                <p class="formula-note">参考口径把 σ需求 换成 1.25 × MAPE × 日均需求，只作对照，不影响主结果。</p>
+              </div>
             </div>
           </details>
 
