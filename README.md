@@ -6,10 +6,10 @@
 
 ## 在线使用
 
-- 主链接：https://USERNAME.github.io/target-inventory/
-- 备用链接：https://PAGES-PROJECT.pages.dev
+- 主链接：<https://wshao191-maker.github.io/target-inventory/>
+- 备用链接：Cloudflare Pages 部署后补充（同一份代码，用于国内部分网络下打不开主链接时替代）
 
-（首次部署完成后会把上面两行替换成真实地址。）
+两个链接打开的是同一个工具，手机上也能直接使用。
 
 ## 计算口径
 
