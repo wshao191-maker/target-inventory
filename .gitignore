@@ -1,0 +1,8 @@
+# Excel 构建产物与依赖：体积巨大（7796 个文件 / 320 MB），不进入发布仓库
+excel/
+
+# 通用忽略
+node_modules/
+Thumbs.db
+desktop.ini
+.DS_Store
